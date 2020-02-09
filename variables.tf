@@ -46,6 +46,11 @@ variable "hasura_jwt_secret_algo" {
   default     = "HS256"
 }
 
+variable "hasura_jwt_claims_namespace" {
+  description = "The claims namespace to use in the Identity Provider"
+  default     = "https://hasura.io/jwt/claims"
+}
+
 variable "hasura_console_enabled" {
   description = "Should the Hasura Console web interface be enabled?"
   default     = "true"
