@@ -20,6 +20,7 @@ The master branch supports Terraform v0.12 and later. For Terraform v0.11 and ol
 - AZ: Availability Zone
 - ALB: Application Load Balancer
 - ACM: AWS Certificate Manager
+- Bastion: A Bastion host to allow migrations on RDS
 - ECS: Elastic Container Service
 - RDS: Relational Database Service
 
@@ -53,6 +54,8 @@ module "hasura" {
   az_count                  = "NUMBER OF AVAILABILITY ZONES"
   vpc_enable_dns_hostnames  = "ENABLE DNS HOSTNAMES"
   environment               = "ENV VARS FOR ECS TASK"
+  allowed_bastion_ips       = "YOUR INTERNAL NETWORKS IP ADDRESS"
+  migrator_public_key       = "THE PUBLIC KEY OF YOUR MIGRATOR"
 }
 ```
 

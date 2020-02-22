@@ -101,3 +101,12 @@ variable "create_iam_service_linked_role" {
   description = "Whether to create IAM service linked role for AWS ElasticSearch service. Can be only one per AWS account."
   default     = true
 }
+
+variable "allowed_bastion_ips" {
+  description = "List of ip addresses (in CIDR notation) that should be allowed access to bastion (ideally production would be run by CI/CD pipeline)."
+  default     = ["0.0.0.0/0"]
+}
+
+variable "migrator_public_key" {
+  description = "The public key that you have the private key for so that you may SSH into the Bastion host."
+}

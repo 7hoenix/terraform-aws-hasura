@@ -13,3 +13,7 @@ output "public_subnets" {
 output "ecs_security_group" {
   value = aws_security_group.hasura_ecs
 }
+
+output "bastion_hosts" {
+  value = aws_instance.bastion.*.id
+}

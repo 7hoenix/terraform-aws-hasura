@@ -146,17 +146,20 @@ resource "aws_security_group" "hasura_ecs" {
   }
 }
 
-# ECS to RDS
-resource "aws_security_group" "hasura_rds" {
-  name        = "hasura-rds"
-  description = "allow inbound access from the hasura tasks only"
+
+# SSH access to Bastion from allowed IPs
+
+resource "aws_security_group" "hasura_bastion" {
+  name        = "hasura-bastion"
+  description = "allow SSH access to hasura bastion"
   vpc_id      = aws_vpc.hasura.id
 
   ingress {
     protocol        = "tcp"
-    from_port       = "5432"
-    to_port         = "5432"
-    security_groups = concat([aws_security_group.hasura_ecs.id], var.additional_db_security_groups)
+    from_port       = 22
+    to_port         = 22
+    cidr_blocks     = var.allowed_bastion_ips
+    security_groups = var.additional_db_security_groups
   }
 
   egress {
@@ -166,6 +169,72 @@ resource "aws_security_group" "hasura_rds" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
+# ECS to RDS
+
+resource "aws_security_group" "hasura_rds" {
+  name        = "hasura-rds"
+  description = "allow inbound access from the hasura tasks only"
+  vpc_id      = aws_vpc.hasura.id
+
+  ingress {
+    protocol        = "tcp"
+    from_port       = "5432"
+    to_port         = "5432"
+    security_groups = concat([aws_security_group.hasura_ecs.id, aws_security_group.hasura_bastion.id], var.additional_db_security_groups)
+  }
+
+  egress {
+    protocol    = "-1"
+    from_port   = 0
+    to_port     = 0
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# -----------------------------------------------------------------------------
+# Create Bastion host
+# -----------------------------------------------------------------------------
+
+data "aws_ami" "centos" {
+  most_recent = true
+
+  filter {
+    name   = "product-code"
+    values = ["aw0evgkw8e5c1q413zgy5pjce"]
+  }
+
+  owners = ["aws-marketplace"]
+}
+
+resource "aws_key_pair" "migrator" {
+  key_name   = "migrator-key"
+  public_key = var.migrator_public_key
+}
+
+resource "aws_instance" "bastion" {
+  count                       = var.az_count
+  ami                         = data.aws_ami.centos.id
+  instance_type               = "t3.micro"
+  key_name                    = "migrator-key"
+  subnet_id                   = aws_subnet.hasura_public[count.index].id
+  vpc_security_group_ids      = [aws_security_group.hasura_bastion.id]
+  associate_public_ip_address = true
+
+  root_block_device {
+    volume_size           = 10
+    delete_on_termination = true
+  }
+
+  lifecycle {
+    ignore_changes = [ami]
+  }
+
+  tags = {
+    Name = "Hasura Bastion (#${count.index})"
+  }
+}
+
 
 # -----------------------------------------------------------------------------
 # Create RDS
